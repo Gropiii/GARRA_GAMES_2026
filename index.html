@@ -3,7 +3,9 @@
   const TIME_CAP_SECONDS = { 'WOD-001': 12 * 60 };
 
   function formatScore(score, wodId) {
-    if (score.unidade !== 'mm:ss') return score.resultado + ' ' + score.unidade;
+    // O lançamento da Prova 2A é em lb, mesmo quando a API retorna o rótulo antigo (kg).
+    const unit = wodId === 'WOD-002A' ? 'lb' : score.unidade;
+    if (unit !== 'mm:ss') return score.resultado + ' ' + unit;
 
     const cap = TIME_CAP_SECONDS[wodId];
     const time = /^(?:(\d+):)?(\d+):([0-5]\d)$/.exec(String(score.resultado).trim());
