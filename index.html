@@ -32,7 +32,10 @@ function render() {
     return sort.asc ? comparison : -comparison;
   });
 
-  const columns = [['posicao', 'Pos.'], ['equipe', 'Equipe'], ...wods.map(wod => [wod.id, wod.nome])];
+  const visibleWods = sharedFirst ? wods.filter(wod => wod.id !== 'WOD-002A' && wod.id !== 'WOD-002B') : wods;
+  const columns = [['posicao', 'Pos.'], ['equipe', 'Equipe'], ...visibleWods.map(wod => [
+    wod.id, sharedFirst && wod.id === 'WOD-003' ? 'Prova 2' : wod.nome
+  ])];
   if (!sharedFirst) columns.push(['pontos', 'Total']);
   const splitLabels = { 'WOD-002A': 'Prova 2A', 'WOD-002B': 'Prova 2B' };
   const headers = columns.map(([key, label]) => {
@@ -44,7 +47,7 @@ function render() {
 
   const body = rows.map(row => {
     const position = sharedFirst ? '1º' : row.posicao ? row.posicao + 'º' : '—';
-    const results = wods.map(wod => {
+    const results = visibleWods.map(wod => {
       const score = row.resultados[wod.id];
       if (!score) return '<td class="score">—</td>';
       const result = formatScore(score, wod.id);
