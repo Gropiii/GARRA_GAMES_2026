@@ -15,4 +15,39 @@
     const elapsed = Number(hours ?? 0) * 3600 + Number(minutes) * 60 + Number(seconds);
     return elapsed > cap ? 'CAP+' + (elapsed - cap) : score.resultado;
   }
-const URL='https://script.google.com/macros/s/AKfycbzUdtnxTQuUBUk67RTPkGdxF_lCASb14O58oDQSpmXJqmIAHX3IR8HJy1hMtYoLQB7JvA/exec';let data,wods,sort={key:'posicao',asc:true};const cat=document.querySelector('#cat'),board=document.querySelector('#board'),modal=document.querySelector('#modal'),statusEl=document.querySelector('#status');function showTeam(i){let r=data[i];modalTitle.textContent=r.equipe;modalBody.innerHTML=r.atletas.length?r.atletas.join('<br>'):'Integrantes ainda não informados';modal.showModal()}function metric(r,k){if(k.startsWith('WOD-'))return r.resultados[k]?.pontos??999;if(k==='posicao'||k==='pontos')return r.posicao?(r[k]??999):999;return r[k]??''}function render(){let rows=data.filter(r=>r.categoria===cat.value).sort((a,b)=>{let x=metric(a,sort.key),y=metric(b,sort.key);return sort.asc?String(x).localeCompare(String(y),undefined,{numeric:true}):String(y).localeCompare(String(x),undefined,{numeric:true})});let cols=[['posicao','Pos.'],['equipe','Equipe'],...wods.map(w=>[w.id,w.nome]),['pontos','Total']];board.innerHTML='<thead><tr>'+cols.map(c=>'<th onclick="order(\''+c[0]+'\')">'+c[1]+' ↕</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr><td class="pos">'+(r.posicao?r.posicao+'º':'—')+'</td><td><span class="team" onclick="showTeam('+data.indexOf(r)+')">'+r.equipe+'</span></td>'+wods.map(w=>{let s=r.resultados[w.id];return '<td class="score">'+(s?'<b>'+s.pontos+'</b><small>'+formatScore(s,w.id)+'</small>':'—')+'</td>'}).join('')+'<td class="pts">'+(r.pontos||'—')+'</td></tr>').join('')+'</tbody>'}function order(k){sort={key:k,asc:sort.key===k?!sort.asc:true};render()}function loadData(){statusEl.textContent='ATUALIZANDO…';fetch(URL).then(r=>r.json()).then(p=>{data=p.ranking;wods=p.wods;const categorias=(p.categorias||[]).filter(Boolean);cat.innerHTML=categorias.map(x=>'<option>'+x+'</option>').join('');cat.onchange=render;statusEl.textContent='ATUALIZADO '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});render()}).catch(()=>statusEl.textContent='INDISPONÍVEL')}loadData();</script></body></html>
+const URL='https://script.google.com/macros/s/AKfycbzUdtnxTQuUBUk67RTPkGdxF_lCASb14O58oDQSpmXJqmIAHX3IR8HJy1hMtYoLQB7JvA/exec';let data,wods,sort={key:'posicao',asc:true};const cat=document.querySelector('#cat'),board=document.querySelector('#board'),modal=document.querySelector('#modal'),statusEl=document.querySelector('#status');function showTeam(i){let r=data[i];modalTitle.textContent=r.equipe;modalBody.innerHTML=r.atletas.length?r.atletas.join('<br>'):'Integrantes ainda não informados';modal.showModal()}function metric(r,k){if(k.startsWith('WOD-'))return r.resultados[k]?.pontos??999;if(k==='posicao'||k==='pontos')return r.posicao?(r[k]??999):999;return r[k]??''}
+const SHARED_FIRST_CATEGORY = 'Kids e Master';
+
+function render() {
+  const sharedFirst = cat.value === SHARED_FIRST_CATEGORY;
+  const rows = data.filter(row => row.categoria === cat.value);
+  rows.sort((a, b) => {
+    if (sharedFirst) return a.equipe.localeCompare(b.equipe, 'pt-BR');
+    const x = metric(a, sort.key);
+    const y = metric(b, sort.key);
+    const comparison = String(x).localeCompare(String(y), undefined, { numeric: true });
+    return sort.asc ? comparison : -comparison;
+  });
+
+  const columns = [['posicao', 'Pos.'], ['equipe', 'Equipe'], ...wods.map(wod => [wod.id, wod.nome])];
+  if (!sharedFirst) columns.push(['pontos', 'Total']);
+  const headers = columns.map(([key, label]) =>
+    sharedFirst ? '<th>' + label + '</th>' : '<th onclick="order(\'' + key + '\')">' + label + ' ↕</th>'
+  ).join('');
+
+  const body = rows.map(row => {
+    const position = sharedFirst ? '1º' : row.posicao ? row.posicao + 'º' : '—';
+    const results = wods.map(wod => {
+      const score = row.resultados[wod.id];
+      if (!score) return '<td class="score">—</td>';
+      const result = formatScore(score, wod.id);
+      if (sharedFirst) return '<td class="score">' + result + '</td>';
+      return '<td class="score"><b>' + score.pontos + '</b><small>' + result + '</small></td>';
+    }).join('');
+    const total = sharedFirst ? '' : '<td class="pts">' + (row.pontos || '—') + '</td>';
+    return '<tr><td class="pos">' + position + '</td><td><span class="team" onclick="showTeam(' +
+      data.indexOf(row) + ')">' + row.equipe + '</span></td>' + results + total + '</tr>';
+  }).join('');
+  board.innerHTML = '<thead><tr>' + headers + '</tr></thead><tbody>' + body + '</tbody>';
+}
+function order(k){sort={key:k,asc:sort.key===k?!sort.asc:true};render()}function loadData(){statusEl.textContent='ATUALIZANDO…';fetch(URL).then(r=>r.json()).then(p=>{data=p.ranking;wods=p.wods;const categorias=(p.categorias||[]).filter(Boolean);cat.innerHTML=categorias.map(x=>'<option>'+x+'</option>').join('');cat.onchange=render;statusEl.textContent='ATUALIZADO '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});render()}).catch(()=>statusEl.textContent='INDISPONÍVEL')}loadData();</script></body></html>
